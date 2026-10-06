@@ -1,0 +1,6 @@
+@Chef_Board_Desafio3_HostAddress = http://localhost:5243
+
+GET {{Chef_Board_Desafio3_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
