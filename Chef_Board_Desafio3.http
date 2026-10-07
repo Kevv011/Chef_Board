@@ -1,6 +1,55 @@
-@Chef_Board_Desafio3_HostAddress = http://localhost:5243
+@ChefBoard_HostAddress = http://localhost:5243
 
-GET {{Chef_Board_Desafio3_HostAddress}}/weatherforecast/
-Accept: application/json
+# Login as the seeded administrator. Copy accessToken to the variable below.
+POST {{ChefBoard_HostAddress}}/login?useCookies=false
+Content-Type: application/json
+
+{
+  "email": "admin@chefboard.local",
+  "password": "Admin123!"
+}
 
 ###
+
+@adminAccessToken = REPLACE_WITH_ACCESS_TOKEN
+
+# Login as the seeded standard user. Use this token to verify read-only access.
+POST {{ChefBoard_HostAddress}}/login?useCookies=false
+Content-Type: application/json
+
+{
+  "email": "user@chefboard.local",
+  "password": "User123!"
+}
+
+###
+
+@userAccessToken = REPLACE_WITH_ACCESS_TOKEN
+
+GET {{ChefBoard_HostAddress}}/api/recipes
+Authorization: Bearer {{adminAccessToken}}
+
+###
+
+POST {{ChefBoard_HostAddress}}/api/recipes
+Authorization: Bearer {{adminAccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Vegetable Soup",
+  "description": "A simple vegetable soup for a quick lunch.",
+  "preparationTimeMinutes": 25
+}
+
+###
+
+# Expected result: 403 Forbidden, because User cannot modify data.
+POST {{ChefBoard_HostAddress}}/api/recipes
+Authorization: Bearer {{userAccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Recipe",
+  "description": "A standard user must not be allowed to create this recipe.",
+  "preparationTimeMinutes": 10
+}
