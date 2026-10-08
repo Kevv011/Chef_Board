@@ -2,17 +2,21 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
+using Chef_Board_Desafio3.Models;
 
 namespace Chef_Board_Desafio3.Pages;
 
-[Authorize]
+[Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ReportesModel : PageModel
 {
     private readonly SsrsOptions _ssrs;
+    private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public ReportesModel(IOptions<SsrsOptions> ssrsOptions)
+    public ReportesModel(IOptions<SsrsOptions> ssrsOptions, SignInManager<ApplicationUser> signInManager)
     {
         _ssrs = ssrsOptions.Value;
+        _signInManager = signInManager;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -22,8 +26,15 @@ public class ReportesModel : PageModel
     public int? TiempoMaximo { get; set; }
 
     public string? IframeUrl { get; private set; }
+    public string? ReportUrl { get; private set; }
     public string? ManagerUrl { get; private set; }
     public string? ErrorMessage { get; private set; }
+
+    public async Task<IActionResult> OnPostLogoutAsync()
+    {
+        await _signInManager.SignOutAsync();
+        return RedirectToPage("/Login");
+    }
 
     public void OnGet()
     {
@@ -59,17 +70,15 @@ public class ReportesModel : PageModel
             url += $"&TiempoMaximo={TiempoMaximo.Value}";
         }
 
-        IframeUrl = url;
+        ReportUrl = url;
+        IframeUrl = url + "&rs:Embed=true";
 
-        // Construir URL de fallback al portal (Reports). Reemplazamos ReportServer por Reports
-        try
+        // El portal puede tener una URL distinta de la del servicio de informes.
+        var portalBase = _ssrs.PortalBaseUrl?.TrimEnd('/');
+        if (string.IsNullOrEmpty(portalBase))
         {
-            var portalBase = baseUrl.Replace("/ReportServer", "/Reports");
-            ManagerUrl = portalBase + "/report" + reportPath;
+            portalBase = baseUrl.Replace("/ReportServer", "/Reports", StringComparison.OrdinalIgnoreCase);
         }
-        catch
-        {
-            ManagerUrl = null;
-        }
+        ManagerUrl = portalBase + "/report" + reportPath;
     }
 }

@@ -1,8 +1,10 @@
 using Chef_Board_Desafio3.Data;
 using Chef_Board_Desafio3.Models;
 using Chef_Board_Desafio3;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,9 +27,45 @@ builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.ConfigureApplicationCookie(options => options.LoginPath = "/Login");
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            Description = "Token devuelto por POST /login?useCookies=false"
+        };
+        return Task.CompletedTask;
+    });
+
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
+    {
+        var metadata = context.Description.ActionDescriptor.EndpointMetadata;
+        var isProtectedApi = context.Description.RelativePath?.StartsWith("api/", StringComparison.OrdinalIgnoreCase) == true;
+        if ((isProtectedApi || metadata.OfType<IAuthorizeData>().Any()) && !metadata.OfType<IAllowAnonymous>().Any())
+        {
+            operation.Security ??= new List<OpenApiSecurityRequirement>();
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Id = "Bearer",
+                        Type = ReferenceType.SecurityScheme
+                    }
+                }] = Array.Empty<string>()
+            });
+        }
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddRazorPages();
 builder.Services.Configure<SsrsOptions>(builder.Configuration.GetSection("Ssrs"));
 
@@ -48,6 +86,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapIdentityApi<ApplicationUser>();
