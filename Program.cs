@@ -1,5 +1,6 @@
 using Chef_Board_Desafio3.Data;
 using Chef_Board_Desafio3.Models;
+using Chef_Board_Desafio3;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -27,6 +28,8 @@ builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddRazorPages();
+builder.Services.Configure<SsrsOptions>(builder.Configuration.GetSection("Ssrs"));
 
 var app = builder.Build();
 
@@ -49,5 +52,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapIdentityApi<ApplicationUser>();
 app.MapControllers();
+app.MapRazorPages();
 
 app.Run();

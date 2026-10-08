@@ -1,0 +1,47 @@
+@page
+@model Chef_Board_Desafio3.Pages.ReportesModel
+@{
+    ViewData["Title"] = "Reportes ChefBoard";
+}
+
+<h1>Reportes ChefBoard</h1>
+
+<form method="get">
+    <label for="report">Seleccione reporte:</label>
+    <select id="report" name="SelectedReportKey" onchange="this.form.submit()">
+        <option value="RecipesIngredients" selected="@(Model.SelectedReportKey == "RecipesIngredients")">Recetas e ingredientes</option>
+        <option value="PreparationSteps" selected="@(Model.SelectedReportKey == "PreparationSteps")">Pasos de preparación</option>
+    </select>
+
+    @if (Model.SelectedReportKey == "RecipesIngredients")
+    {
+        <label for="tiempo">Tiempo máximo (min):</label>
+        <input type="number" id="tiempo" name="TiempoMaximo" min="1" max="1440" value="@(Model.TiempoMaximo?.ToString() ?? string.Empty)" />
+    }
+
+    <button type="submit">Cargar</button>
+    <noscript><button type="submit">Cargar (sin JS)</button></noscript>
+</form>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div style="color:red">@Model.ErrorMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(Model.IframeUrl))
+{
+    <div style="margin-top:10px; margin-bottom:10px;">
+        <a href="@Model.IframeUrl" target="_blank" rel="noopener noreferrer">Abrir en SSRS (ReportServer)</a>
+        @if (!string.IsNullOrEmpty(Model.ManagerUrl))
+        {
+            <text> | </text>
+            <a href="@Model.ManagerUrl" target="_blank" rel="noopener noreferrer">Abrir en Portal de Informes (Reports)</a>
+        }
+    </div>
+
+    <div id="visor">
+        <iframe src="@Model.IframeUrl" title="Visor SSRS" width="100%" height="800" frameborder="0"></iframe>
+    </div>
+}
+
+<p style="color:gray; font-size:small">Nota: si el informe no se muestra dentro del iframe, puede deberse a cabeceras de seguridad o autenticación del servidor SSRS. Use el enlace "Abrir en SSRS" como alternativa.</p>
